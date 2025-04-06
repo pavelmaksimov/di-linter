@@ -1,0 +1,3 @@
+project-root = "project"
+exclude-objects = []
+exclude-modules = []
