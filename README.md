@@ -37,3 +37,6 @@ project-root = "project"
 exclude-objects = ["Settings", "DIContainer"]
 exclude-modules = ["endpoints.py"]
 ```
+
+## Output message
+![img.png](docs/img.png)
