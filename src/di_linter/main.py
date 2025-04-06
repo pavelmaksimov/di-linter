@@ -260,8 +260,7 @@ def linter(project_root, exclude_objects=None, exclude_modules=None):
             ):
                 has_di = True
                 print(
-                    f'{issue.filepath}:{issue.line_num}: DependencyInjection: "{issue.message}", '
-                    f'Code: "{issue.code_line}"',
+                    f'{issue.filepath}:{issue.line_num}: {issue.code_line}',
                     file=sys.stderr,
                 )
 
