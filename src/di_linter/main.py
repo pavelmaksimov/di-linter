@@ -272,7 +272,7 @@ def linter(project_root, exclude_objects=None, exclude_modules=None):
 
 def run():
     cwd = Path().cwd()
-    config_path = cwd / "toml"
+    config_path = cwd / "di.toml"
     config = None
     if config_path.exists():
         config_data = config_path.read_text()
