@@ -8,18 +8,25 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = []
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+
+[project.optional-dependencies]
+flake8 = [
+    "flake8>=7.2.0",
+]
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/pavelmaksimov/di-linter"
 "Bug Tracker" = "https://github.com/pavelmaksimov/di-linter/issues"
 
+[project.entry-points."flake8.extension"]
+DI = "di_linter.flake8_plugin:DIChecker"
+
 [project.scripts]
-di-linter = "di_linter.main:run"
+di-linter = "di_linter.main:main"
 
 [build-system]
 requires = ["hatchling"]

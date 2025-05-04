@@ -1,20 +1,15 @@
+import argparse
 import ast
 import sys
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set, Optional, NewType
 
+from di_linter.utils import validate_path, find_project_root, load_config
+
 CodeLine = NewType("CodeLine", str)
 NumLine = NewType("NumLine", int)
 Line = Dict[NumLine, CodeLine]
-
-
-@dataclass
-class AnalysisConfig:
-    project_root: Path
-    project_prefix: str
-    skip_comment: str = "di: skip"
 
 
 @dataclass
@@ -23,6 +18,7 @@ class Issue:
     line_num: int
     message: str
     code_line: str
+    col: int
 
 
 class ASTParentTransformer(ast.NodeTransformer):
@@ -67,13 +63,18 @@ class ProjectImportsCollector(ast.NodeVisitor):
 class DependencyChecker:
     """The main class for checking dependencies."""
 
-    def __init__(self, config: AnalysisConfig):
-        self.config = config
+    def __init__(self, path: Path, project_name: str):
+        self.path = path
+        self.project_name = project_name
         self.issues: List[Issue] = []
 
     def analyze_project(self):
-        for file in self.config.project_root.rglob("*.py"):
-            self._analyze_file(file)
+        if self.path.is_file():
+            self._analyze_file(self.path)
+        else:
+            for file in self.path.rglob("*.py"):
+                self._analyze_file(file)
+
         return self.issues
 
     def _analyze_file(self, filepath: Path):
@@ -86,7 +87,6 @@ class DependencyChecker:
 
         FunctionVisitor(
             filepath=filepath,
-            config=self.config,
             imports=imports,
             local_defs=local_defs,
             lines=lines,
@@ -104,7 +104,7 @@ class DependencyChecker:
         return ASTParentTransformer().visit(tree)
 
     def _collect_imports(self, tree: ast.AST) -> Dict[str, str]:
-        collector = ProjectImportsCollector(self.config.project_prefix)
+        collector = ProjectImportsCollector(self.project_name)
         collector.visit(tree)
         return collector.imported_modules
 
@@ -120,14 +120,12 @@ class FunctionVisitor(ast.NodeVisitor):
     def __init__(
         self,
         filepath: Path,
-        config: AnalysisConfig,
         imports: Dict[str, str],
         local_defs: Set[str],
         lines: Line,
         issues: List[Issue],
     ):
         self.filepath = filepath
-        self.config = config
         self.imports = imports
         self.local_defs = local_defs
         self.lines = lines
@@ -149,7 +147,7 @@ class FunctionVisitor(ast.NodeVisitor):
             params=params,
             lines=self.lines,
             filepath=self.filepath,
-            skip_comment=self.config.skip_comment,
+            skip_comment="di: skip",
         )
         visitor.visit(node)
         self.issues.extend(visitor.issues)
@@ -196,7 +194,7 @@ class DependencyVisitor(ast.NodeVisitor):
         if self._is_project_dependency(node.func):
             root_name = self._get_root_name(node.func)
             if root_name not in self.params and not self._is_line_skipped(node.lineno):
-                self._add_issue(line=node.lineno, message=root_name)
+                self._add_issue(line=node.lineno, col=node.col_offset, message=root_name)
 
         self.generic_visit(node)
 
@@ -204,7 +202,7 @@ class DependencyVisitor(ast.NodeVisitor):
         if not isinstance(node.parent, ast.Call) and self._is_project_dependency(node):
             root_name = self._get_root_name(node)
             if root_name not in self.params and not self._is_line_skipped(node.lineno):
-                self._add_issue(line=node.lineno, message=root_name)
+                self._add_issue(line=node.lineno, col=node.col_offset, message=root_name)
         self.generic_visit(node)
 
     def _is_in_raise_statement(self, node) -> bool:
@@ -229,7 +227,7 @@ class DependencyVisitor(ast.NodeVisitor):
         line = self.lines.get(NumLine(line_num), "")
         return self.skip_comment in line
 
-    def _add_issue(self, line: int, message: str):
+    def _add_issue(self, line: int, col, message: str):
         code_line = self.lines.get(NumLine(line), "")
         self.issues.append(
             Issue(
@@ -237,32 +235,40 @@ class DependencyVisitor(ast.NodeVisitor):
                 line_num=line,
                 message=message,
                 code_line=code_line,
+                col=col,
             )
         )
 
 
-def linter(project_root, exclude_objects=None, exclude_modules=None):
-    project_path = Path(project_root)
+def iterate_issue(paths: list[Path] | Path, project_root, exclude_modules, exclude_objects):
+    if not isinstance(paths, list):
+        paths = [paths]
+
+    for path in paths:
+        checker = DependencyChecker(path.absolute(), project_root.name)
+        issues = checker.analyze_project()
+        if issues:
+            for issue in issues:
+                if (
+                        issue.message not in exclude_objects
+                        and Path(issue.filepath).name not in exclude_modules
+                ):
+                    yield issue
+
+
+def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules=None):
     exclude_objects = exclude_objects or ()
     exclude_modules = exclude_modules or ()
-    config = AnalysisConfig(project_path, project_path.name)
 
-    print(f"Analizing files in {project_path.absolute()}")
+    print(f"Analizing {path.absolute()}")
 
-    checker = DependencyChecker(config)
-    issues = checker.analyze_project()
     has_di = False
-    if issues:
-        for issue in issues:
-            if (
-                issue.message not in exclude_objects
-                and Path(issue.filepath).name not in exclude_modules
-            ):
-                has_di = True
-                print(
-                    f'{issue.filepath}:{issue.line_num}: {issue.code_line}',
-                    file=sys.stderr,
-                )
+    for issue in iterate_issue(path, project_root, exclude_modules, exclude_objects):
+        has_di = True
+        print(
+            f"{issue.filepath}:{issue.line_num}: Dependency injection: {issue.code_line}",
+            file=sys.stderr,
+        )
 
     if has_di:
         sys.exit(1)
@@ -270,29 +276,46 @@ def linter(project_root, exclude_objects=None, exclude_modules=None):
     print("No dependency injections found")
 
 
-def run():
-    cwd = Path().cwd()
-    config_path = cwd / "di.toml"
-    config = None
-    if config_path.exists():
-        config_data = config_path.read_text()
-        config = tomllib.loads(config_data)
-
-    project_path = None
-
-    if len(sys.argv) > 1:
-        project_path = sys.argv[1]
-
-    if config and "project-root" in config:
-        project_path = Path().cwd() / config["project-root"]
-
-    if not project_path:
-        raise ValueError(
-            "Please specify the project root directory or configure the project in 'di.toml' file"
-        )
-
-    linter(
-        project_root=project_path,
-        exclude_objects=config["exclude-objects"] if config and "exclude-objects" in config else None,
-        exclude_modules=config["exclude-modules"] if config and "exclude-modules" in config else None,
+def main():
+    parser = argparse.ArgumentParser(
+        description="DI Linter - Static code analysis for dependency injection"
     )
+    parser.add_argument("path", help="Module or project path to analyze")
+    parser.add_argument("-c", "--config-path", help="Path to the configuration file")
+    parser.add_argument(
+        "--exclude-objects", nargs="+", help="List of objects to exclude from checks"
+    )
+    parser.add_argument(
+        "--exclude-modules", nargs="+", help="List of modules to exclude from checks"
+    )
+    args = parser.parse_args()
+
+    path = Path(args.path)
+    validate_path(path)
+    project_root = find_project_root(Path(args.path))
+
+    config_path = None
+    if args.config_path:
+        config_path = Path(args.config_path)
+
+    config = load_config(config_path)
+
+    exclude_objects = []
+    exclude_modules = []
+
+    if "exclude-objects" in config:
+        exclude_objects = config.get("exclude-objects", [])
+    if "exclude-modules" in config:
+        exclude_modules = config.get("exclude-modules", [])
+
+    if args.exclude_objects:
+        exclude_objects = args.exclude_objects
+    if args.exclude_modules:
+        exclude_modules = args.exclude_modules
+
+    print(f"Analyzing: {path}")
+    print(f"Project name: {project_root.name}")
+    print(f"Exclude objects: {exclude_objects}")
+    print(f"Exclude modules: {exclude_modules}")
+
+    linter(path, project_root, exclude_objects, exclude_modules)
