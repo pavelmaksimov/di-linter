@@ -31,3 +31,15 @@ di-linter = "di_linter.main:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+target-version = "py311"
+include = ["src/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint.flake8-copyright]
+author = "Ruff"

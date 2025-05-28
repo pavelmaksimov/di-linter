@@ -1,6 +1,6 @@
+import tomllib
 from pathlib import Path
 from typing import Optional, Dict, Any
-import tomllib
 
 marker_files = {"setup.py", "setup.cfg", "pyproject.toml", "requirements.txt"}
 

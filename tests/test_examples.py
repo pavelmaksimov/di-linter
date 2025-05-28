@@ -58,7 +58,9 @@ def test_flake8_plugin_on_my_module():
     ]
 
     for injection in expected_injections:
-        assert f"DI001 Dependency injection: {injection}" in output, f"Injection not found: {injection}"
+        assert f"DI001 Dependency injection: {injection}" in output, (
+            f"Injection not found: {injection}"
+        )
 
     # Check that false dependency injections are not found
     not_expected_injections = [
@@ -72,7 +74,9 @@ def test_flake8_plugin_on_my_module():
     ]
 
     for not_injection in not_expected_injections:
-        assert f"DI001 Dependency injection: {not_injection}" not in output, f"False injection found: {not_injection}"
+        assert f"DI001 Dependency injection: {not_injection}" not in output, (
+            f"False injection found: {not_injection}"
+        )
 
 
 def test_di_linter_on_packet():
@@ -138,7 +142,9 @@ def test_di_linter_on_packet():
     ]
 
     for not_injection in not_expected_injections:
-        assert f"Dependency injection: {not_injection}" not in output, f"Найдена ложная инъекция: {not_injection}"
+        assert f"Dependency injection: {not_injection}" not in output, (
+            f"Найдена ложная инъекция: {not_injection}"
+        )
 
 
 if __name__ == "__main__":

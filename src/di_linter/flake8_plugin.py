@@ -1,8 +1,9 @@
 from pathlib import Path
 
+from flake8.options.manager import OptionManager
+
 from .main import iterate_issue
 from .utils import find_project_root, load_config
-from flake8.options.manager import OptionManager
 
 
 class DIChecker:
@@ -15,6 +16,7 @@ class DIChecker:
         name: Name of the plugin
         version: Version of the plugin
     """
+
     name = "di-linter"
     version = "0.1.0"
 

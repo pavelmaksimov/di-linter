@@ -23,6 +23,7 @@ class Issue:
         code_line: The actual code line containing the issue
         col: Column number where the issue starts
     """
+
     filepath: Path
     line_num: int
     message: str
@@ -239,6 +240,7 @@ class FunctionVisitor(ast.NodeVisitor):
     This visitor finds all function and async function definitions in the code and
     analyzes them for potential dependency injection issues.
     """
+
     def __init__(
         self,
         filepath: Path,
@@ -460,8 +462,8 @@ def iterate_issue(paths: list[Path] | Path, project_root, exclude_modules, exclu
         if issues:
             for issue in issues:
                 if (
-                        issue.message not in exclude_objects
-                        and Path(issue.filepath).name not in exclude_modules
+                    issue.message not in exclude_objects
+                    and Path(issue.filepath).name not in exclude_modules
                 ):
                     yield issue
 
