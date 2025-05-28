@@ -6,10 +6,26 @@ from flake8.options.manager import OptionManager
 
 
 class DIChecker:
+    """Flake8 plugin for checking dependency injections.
+
+    This plugin integrates the dependency injection linter with Flake8,
+    allowing it to be run as part of Flake8's static analysis.
+
+    Attributes:
+        name: Name of the plugin
+        version: Version of the plugin
+    """
     name = "di-linter"
     version = "0.1.0"
 
     def __init__(self, tree, filename, options=None):
+        """Initialize the DIChecker.
+
+        Args:
+            tree: AST of the file to check
+            filename: Path to the file to check
+            options: Flake8 options object
+        """
         self.tree = tree
         self.path = Path(filename)
         self.project_root = find_project_root(self.path)
@@ -40,6 +56,12 @@ class DIChecker:
                 self.exclude_modules = self.options.di_exclude_modules
 
     def run(self):
+        """Run the dependency injection checker.
+
+        Yields:
+            Tuples containing (line_number, column, message, checker_type)
+            for each dependency injection issue found
+        """
         for issue in iterate_issue(
             self.path, self.project_root, self.exclude_objects, self.exclude_modules
         ):
@@ -48,6 +70,14 @@ class DIChecker:
 
 
 def register_options(option_manager: OptionManager):
+    """Register options for the DIChecker plugin with Flake8.
+
+    This function is called by Flake8 to register command-line options
+    and configuration file options for the plugin.
+
+    Args:
+        option_manager: Flake8's option manager
+    """
     option_manager.add_option(
         "--di-exclude-objects",
         default="",

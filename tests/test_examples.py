@@ -11,22 +11,22 @@ MY_MODULE_PATH = PACKET_DIR / "my_module.py"
 
 
 def test_flake8_plugin_on_my_module():
-    """Проверяет, что flake8 плагин находит правильные инъекции зависимостей в my_module.py."""
-    # Запускаем flake8 с плагином DI на тестовом файле
+    """Checks that the flake8 plugin finds the correct dependency injections in my_module.py."""
+    # Run flake8 with the DI plugin on the test file
     result = subprocess.run(
         ["flake8", "--select=DI", str(MY_MODULE_PATH)],
         capture_output=True,
         text=True,
     )
 
-    # Проверяем, что процесс завершился с ошибкой (найдены инъекции зависимостей)
+    # Check that the process ended with an error (dependency injections were found)
     assert result.returncode != 0
 
-    # Проверяем, что в выводе есть сообщения об инъекциях зависимостей
+    # Check that the output contains messages about dependency injections
     output = result.stdout or result.stderr
     assert "DI001 Dependency injection:" in output
 
-    # Проверяем, что найдены ожидаемые инъекции зависимостей
+    # Check that the expected dependency injections were found
     expected_injections = [
         "local_func()",
         "LocalKlass()",
@@ -58,9 +58,9 @@ def test_flake8_plugin_on_my_module():
     ]
 
     for injection in expected_injections:
-        assert f"DI001 Dependency injection: {injection}" in output, f"Не найдена инъекция: {injection}"
+        assert f"DI001 Dependency injection: {injection}" in output, f"Injection not found: {injection}"
 
-    # Проверяем, что не найдены ложные инъекции зависимостей
+    # Check that false dependency injections are not found
     not_expected_injections = [
         "raise LocalModuleException()",
         "raise OtherModuleException()",
@@ -72,27 +72,27 @@ def test_flake8_plugin_on_my_module():
     ]
 
     for not_injection in not_expected_injections:
-        assert f"DI001 Dependency injection: {not_injection}" not in output, f"Найдена ложная инъекция: {not_injection}"
+        assert f"DI001 Dependency injection: {not_injection}" not in output, f"False injection found: {not_injection}"
 
 
 def test_di_linter_on_packet():
-    """Проверяет, что di-linter находит правильные инъекции зависимостей в директории packet."""
-    # Запускаем di-linter на тестовой директории
+    """Checks that di-linter finds the correct dependency injections in the packet directory."""
+    # Run di-linter on the test directory
     result = subprocess.run(
         ["di-linter", str(PACKET_DIR)],
         capture_output=True,
         text=True,
     )
 
-    # Проверяем, что процесс завершился с ошибкой (найдены инъекции зависимостей)
+    # Check that the process ended with an error (dependency injections were found)
     assert result.returncode != 0
 
-    # Проверяем, что в выводе есть сообщения об инъекциях зависимостей
-    # Сообщения об инъекциях зависимостей выводятся в stderr
+    # Check that the output contains messages about dependency injections
+    # Dependency injection messages are output to stderr
     output = result.stderr
     assert "Dependency injection:" in output
 
-    # Проверяем, что найдены ожидаемые инъекции зависимостей
+    # Check that the expected dependency injections were found
     expected_injections = [
         "local_func()",
         "LocalKlass()",
@@ -124,9 +124,9 @@ def test_di_linter_on_packet():
     ]
 
     for injection in expected_injections:
-        assert f"Dependency injection: {injection}" in output, f"Не найдена инъекция: {injection}"
+        assert f"Dependency injection: {injection}" in output, f"Injection not found: {injection}"
 
-    # Проверяем, что не найдены ложные инъекции зависимостей
+    # Check that false dependency injections are not found
     not_expected_injections = [
         "raise LocalModuleException()",
         "raise OtherModuleException()",

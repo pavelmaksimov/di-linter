@@ -89,7 +89,7 @@ async def examples_dependency_injection_async():
         pass
 
 
-@functools.lru_cache  # Не инъекция
+@functools.lru_cache  # Not an injection
 def examples_not_dependency_injection():
     # These are examples of not injection of dependence, because they are exceptions.
     if 0:
@@ -113,7 +113,7 @@ def examples_not_dependency_injection():
     local_func()  # di: skip
 
 
-@lru_cache(maxsize=None)  # Не инъекция
+@lru_cache(maxsize=None)  # Not an injection
 def examples_not_dependency_injection_via_args(
     func_in_args,
     KlassInArgs,
