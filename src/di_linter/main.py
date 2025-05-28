@@ -494,7 +494,7 @@ def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules
     if has_di:
         sys.exit(1)
 
-    print("No dependency injections found")
+    print("All checks have been successful!")
 
 
 def main():
