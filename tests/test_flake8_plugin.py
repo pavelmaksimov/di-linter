@@ -1,11 +1,5 @@
 import ast
-import sys
-from pathlib import Path
 from typing import List, Tuple
-
-
-# Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.di_linter.flake8_plugin import DIChecker
 
