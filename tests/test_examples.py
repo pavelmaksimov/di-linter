@@ -11,22 +11,18 @@ MY_MODULE_PATH = PACKET_DIR / "my_module.py"
 
 
 def test_flake8_plugin_on_my_module():
-    """Checks that the flake8 plugin finds the correct dependency injections in my_module.py."""
-    # Run flake8 with the DI plugin on the test file
+    """Checks that the flake8 plugin finds the correct dependency injections in examples."""
     result = subprocess.run(
         ["flake8", "--select=DI", str(MY_MODULE_PATH)],
         capture_output=True,
         text=True,
     )
 
-    # Check that the process ended with an error (dependency injections were found)
     assert result.returncode != 0
 
-    # Check that the output contains messages about dependency injections
     output = result.stdout or result.stderr
     assert "DI001 Dependency injection:" in output
 
-    # Check that the expected dependency injections were found
     expected_injections = [
         "local_func()",
         "LocalKlass()",
@@ -62,7 +58,6 @@ def test_flake8_plugin_on_my_module():
             f"Injection not found: {injection}"
         )
 
-    # Check that false dependency injections are not found
     not_expected_injections = [
         "raise LocalModuleException()",
         "raise OtherModuleException()",
@@ -80,23 +75,18 @@ def test_flake8_plugin_on_my_module():
 
 
 def test_di_linter_on_packet():
-    """Checks that di-linter finds the correct dependency injections in the packet directory."""
-    # Run di-linter on the test directory
+    """Checks that di-linter finds the correct dependency injections on examples."""
     result = subprocess.run(
         ["di-linter", str(PACKET_DIR)],
         capture_output=True,
         text=True,
     )
 
-    # Check that the process ended with an error (dependency injections were found)
     assert result.returncode != 0
 
-    # Check that the output contains messages about dependency injections
-    # Dependency injection messages are output to stderr
     output = result.stderr
     assert "Dependency injection:" in output
 
-    # Check that the expected dependency injections were found
     expected_injections = [
         "local_func()",
         "LocalKlass()",
@@ -130,7 +120,6 @@ def test_di_linter_on_packet():
     for injection in expected_injections:
         assert f"Dependency injection: {injection}" in output, f"Injection not found: {injection}"
 
-    # Check that false dependency injections are not found
     not_expected_injections = [
         "raise LocalModuleException()",
         "raise OtherModuleException()",
@@ -143,7 +132,7 @@ def test_di_linter_on_packet():
 
     for not_injection in not_expected_injections:
         assert f"Dependency injection: {not_injection}" not in output, (
-            f"Найдена ложная инъекция: {not_injection}"
+            f"False injection was found: {not_injection}"
         )
 
 
