@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Set, Optional, NewType
 
 from di_linter.search_modules import match_pattern, get_module_path
-from di_linter.utils import validate_path, find_project_root, load_config
+from di_linter.utils import validate_path, find_project_root, load_config, frame_text_with_centered_title
 
 CodeLine = NewType("CodeLine", str)
 NumLine = NewType("NumLine", int)
@@ -467,13 +467,13 @@ def iterate_issue(paths: list[Path] | Path, project_root, exclude_objects, exclu
                 module_path = get_module_path(issue, project_root)
 
                 if (
-                    issue.message not in exclude_objects
-                    and not any(match_pattern(module_path, pattern) for pattern in exclude_modules)
+                        not any(match_pattern(issue.message, pattern) for pattern in exclude_objects)
+                        and not any(match_pattern(module_path, pattern) for pattern in exclude_modules)
                 ):
                     yield issue
 
 
-def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules=None):
+def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules=None) -> int:
     """Run the dependency injection linter on the given path.
 
     Args:
@@ -490,18 +490,15 @@ def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules
 
     print(f"Analyzing {path.absolute()}")
 
-    has_di = False
+    count = 0
     for issue in iterate_issue(path, project_root, exclude_objects, exclude_modules):
-        has_di = True
         print(
             f"{issue.filepath}:{issue.line_num}: Dependency injection: {issue.code_line}",
             file=sys.stderr,
         )
+        count += 1
 
-    if has_di:
-        sys.exit(1)
-
-    print("All checks have been successful!")
+    return count
 
 
 def main():
@@ -545,9 +542,24 @@ def main():
     if args.exclude_modules:
         exclude_modules = args.exclude_modules
 
-    print(f"Analyzing: {path}")
-    print(f"Project name: {project_root.name}")
-    print(f"Exclude objects: {exclude_objects}")
-    print(f"Exclude modules: {exclude_modules}")
+    text = (
+        f"Analyzing: {path.absolute()}\n"
+        f"Project name: {project_root.name}\n"
+        f"Exclude objects: {exclude_objects}\n"
+        f"Exclude modules: {exclude_modules}\n"
+        "{info}"
+    )
+    print("DI Linter scanning modules:")
+    count = linter(path, project_root, exclude_objects, exclude_modules)
 
-    linter(path, project_root, exclude_objects, exclude_modules)
+    if count:
+        print(frame_text_with_centered_title(text.format(info=f"Found {count} problems!"), "DI Linter"))
+        sys.exit(1)
+    else:
+        print(
+            frame_text_with_centered_title(
+                text.format(info="All checks have been successful!"),
+                "DI Linter"
+            ),
+            file=sys.stderr
+        )

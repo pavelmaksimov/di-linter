@@ -1,3 +1,4 @@
+import textwrap
 import tomllib
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -70,3 +71,38 @@ def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
             print(f"Error loading config from {config_path}: {e}")
 
     return {}
+
+
+def frame_text_with_centered_title(text: str, title: str = "", padding: int = 1, width: int = 100) -> str:
+    wrapped_lines = []
+
+    for line in text.strip().splitlines():
+        wrapped = textwrap.wrap(line, width=width)
+        wrapped_lines.extend(wrapped or [""])
+
+    if not wrapped_lines:
+        return ""
+
+    max_len = max(len(line) for line in wrapped_lines)
+    content_width = max_len + padding * 2
+
+    # We form the upper frame with the heading aligned in the center.
+    if title:
+        title_str = f" {title} "
+        left_len = (content_width - len(title_str)) // 2
+        right_len = content_width - len(title_str) - left_len
+        top = f"┌{'─' * left_len}{title_str}{'─' * right_len}┐"
+    else:
+        top = f"┌{'─' * content_width}┐"
+
+    bottom = f"└{'─' * content_width}┘"
+
+    result = [top]
+
+    for line in wrapped_lines:
+        padded = f"{' ' * padding}{line.ljust(max_len)}{' ' * padding}"
+        result.append(f"│{padded}│")
+
+    result.append(bottom)
+
+    return "\n".join(result)
