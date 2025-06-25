@@ -92,7 +92,7 @@ def register_options(option_manager: OptionManager):
         default="",
         parse_from_config=True,
         comma_separated_list=True,
-        help="List of modules to exclude from dependency injection checks",
+        help="List of module patterns to exclude from dependency injection checks",
     )
     option_manager.add_option(
         "--di-config",

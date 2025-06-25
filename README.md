@@ -21,24 +21,24 @@ This linter identifies cases where project-specific dependencies are directly cr
 ### Examples of Dependency Injection Issues
 
 ```python
-# BAD: Direct instantiation of project dependencies
 from project.user.repo import UserRepository
 
 def process_data():
+    # BAD: Direct instantiation of project dependencies
     repository = UserRepository()  # DI001: Dependency injection
     data = repository.get_all()
     return data
 
-# BAD: Direct usage of project module functions
 from project.notifications import send_email
 
 def send_notification():
+    # BAD: Direct usage of project module functions
     send_email("user@example.com", "Hello")  # DI001: Dependency injection
 
-# BAD: Using context managers from project modules
 from project.db import context_manager
 
 def backup_data():
+    # BAD: Using context managers from project modules
     with context_manager():  # DI001: Dependency injection
         # do something
         pass
@@ -113,8 +113,13 @@ project-root = "project"
 # Optional: Objects to exclude from dependency injection checks
 exclude-objects = ["Settings", "DIContainer"]
 
-# Optional: Modules to exclude from dependency injection checks
-exclude-modules = ["endpoints.py"]
+# Optional: Module patterns to exclude from dependency injection checks
+exclude-modules = [
+    "project.endpoints",     # Exact match
+    "project.api.*",         # All modules in the api package
+    "*.endpoints",           # All modules ending with endpoints
+    "project.*.models"       # All models modules in any subpackage of project
+]
 ```
 
 
@@ -154,14 +159,14 @@ Add the following to your flake8 configuration file (e.g., `.flake8`, `setup.cfg
 [flake8]
 select = DI
 di-exclude-objects = Settings,DIContainer
-di-exclude-modules = endpoints.py
+di-exclude-modules = project.endpoints,project.api.*,*.endpoints,project.*.models
 di-config = path/to/di.toml  # Optional: custom path to configuration file
 ```
 
 You can also specify these options on the command line:
 
 ```bash
-flake8 --select=DI --di-exclude-objects=Settings,DIContainer --di-exclude-modules=endpoints.py --di-config=path/to/di.toml path/to/your/project
+flake8 --select=DI --di-exclude-objects=Settings,DIContainer --di-exclude-modules=project.endpoints,project.api.* --di-config=path/to/di.toml path/to/your/project
 ```
 
 The `--di-config` option allows you to specify a custom path to the configuration file, 

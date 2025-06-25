@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set, Optional, NewType
 
+from di_linter.search_modules import match_pattern, get_module_path
 from di_linter.utils import validate_path, find_project_root, load_config
 
 CodeLine = NewType("CodeLine", str)
@@ -441,14 +442,14 @@ class DependencyVisitor(ast.NodeVisitor):
         )
 
 
-def iterate_issue(paths: list[Path] | Path, project_root, exclude_modules, exclude_objects):
+def iterate_issue(paths: list[Path] | Path, project_root, exclude_objects, exclude_modules=None):
     """Iterate through dependency injection issues found in the given paths.
 
     Args:
         paths: A single path or a list of paths to analyze
         project_root: The root directory of the project
-        exclude_modules: List of module names to exclude from checks
         exclude_objects: List of object names to exclude from checks
+        exclude_modules: List of module patterns to exclude from checks
 
     Yields:
         Issue objects representing dependency injection issues
@@ -456,14 +457,18 @@ def iterate_issue(paths: list[Path] | Path, project_root, exclude_modules, exclu
     if not isinstance(paths, list):
         paths = [paths]
 
+    exclude_modules = exclude_modules or []
+
     for path in paths:
         checker = DependencyChecker(path.absolute(), project_root.name)
         issues = checker.analyze_project()
         if issues:
             for issue in issues:
+                module_path = get_module_path(issue, project_root)
+
                 if (
                     issue.message not in exclude_objects
-                    and Path(issue.filepath).name not in exclude_modules
+                    and not any(match_pattern(module_path, pattern) for pattern in exclude_modules)
                 ):
                     yield issue
 
@@ -475,7 +480,7 @@ def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules
         path: Path to the file or directory to analyze
         project_root: The root directory of the project
         exclude_objects: List of object names to exclude from checks
-        exclude_modules: List of module names to exclude from checks
+        exclude_modules: List of module patterns to exclude from checks
 
     Returns:
         None. Exits with code 1 if dependency injections are found.
@@ -486,7 +491,7 @@ def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules
     print(f"Analyzing {path.absolute()}")
 
     has_di = False
-    for issue in iterate_issue(path, project_root, exclude_modules, exclude_objects):
+    for issue in iterate_issue(path, project_root, exclude_objects, exclude_modules):
         has_di = True
         print(
             f"{issue.filepath}:{issue.line_num}: Dependency injection: {issue.code_line}",
@@ -513,7 +518,7 @@ def main():
         "--exclude-objects", nargs="+", help="List of objects to exclude from checks"
     )
     parser.add_argument(
-        "--exclude-modules", nargs="+", help="List of modules to exclude from checks"
+        "--exclude-modules", nargs="+", help="List of module patterns to exclude from checks"
     )
     args = parser.parse_args()
 
