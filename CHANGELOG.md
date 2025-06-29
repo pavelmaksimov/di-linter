@@ -2,12 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+### Added
 ## [1.2.0] - 2023-07-29
 
 ### Added
 - New feature: detection of patch usage in test files
 - New configuration option `tests-path` for specifying test directories
 - Command-line argument `--tests-path` for specifying test directories
+- New feature: support for module pattern exclusions using fnmatch syntax
+- Enhanced pattern matching for both object and module exclusions
+- Comprehensive documentation for pattern exclusion feature
 
 ### Changed
 - Improved error reporting for patch usage in tests

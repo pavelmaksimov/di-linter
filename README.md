@@ -146,9 +146,17 @@ If not provided, the linter will work with default settings.
 project-root = "project"
 
 # Optional: Objects to exclude from dependency injection checks
-exclude-objects = ["Settings", "DIContainer"]
+# Supports fnmatch pattern syntax with wildcards (*)
+exclude-objects = [
+    "Settings",              # Exact match
+    "DIContainer",           # Exact match
+    "Config*",               # All objects starting with Config
+    "*Repository",           # All objects ending with Repository
+    "*Factory*"              # All objects containing Factory
+]
 
 # Optional: Module patterns to exclude from dependency injection checks
+# Supports fnmatch pattern syntax with wildcards (*)
 exclude-modules = [
     "project.endpoints",     # Exact match
     "project.api.*",         # All modules in the api package
@@ -215,6 +223,40 @@ flake8 --select=DI --di-exclude-objects=Settings,DIContainer --di-exclude-module
 The `--di-config` option allows you to specify a custom path to the configuration file, 
 which is useful when you want to use a configuration file that's not in one of the default locations.
 
+
+## Pattern Exclusions
+
+The linter supports excluding specific objects and modules from dependency injection checks using pattern matching. This is useful when you have certain objects or modules that you want to exempt from the dependency injection rules.
+
+### Pattern Matching Syntax
+
+Both `exclude-objects` and `exclude-modules` support pattern matching using the `fnmatch` syntax, which allows for flexible wildcard matching:
+
+- `*` matches any sequence of characters (including none)
+- Exact string matches the exact name
+- Pattern matching is case-insensitive (e.g., "Local*" will match both "LocalKlass" and "local_func")
+
+### Object Pattern Examples
+
+- `"Settings"` - Matches exactly the object named "Settings"
+- `"Config*"` - Matches all objects starting with "Config" (e.g., "Config", "ConfigLoader", "ConfigManager")
+- `"*Repository"` - Matches all objects ending with "Repository" (e.g., "UserRepository", "ProductRepository")
+- `"*Factory*"` - Matches all objects containing "Factory" (e.g., "Factory", "UserFactory", "FactoryMethod")
+
+### Module Pattern Examples
+
+- `"project.endpoints"` - Matches exactly the module named "project.endpoints"
+- `"project.api.*"` - Matches all modules in the "project.api" package (e.g., "project.api.users", "project.api.products")
+- `"*.endpoints"` - Matches all modules ending with "endpoints" (e.g., "api.endpoints", "web.endpoints")
+- `"project.*.models"` - Matches all "models" modules in any subpackage of "project" (e.g., "project.users.models", "project.products.models")
+
+### How Exclusions Work
+
+- **Object exclusions** match against the object name in the issue message (e.g., "LocalKlass", "func_from_other_module")
+- **Module exclusions** match against the module path of the file where the issue is reported, not the imported module
+- To exclude issues related to a specific imported module, you can:
+  1. Use `exclude-objects` with patterns matching the imported module name (e.g., "other_module*")
+  2. Use `exclude-modules` to exclude the entire file where the imports are used
 
 ## Skipping Specific Lines
 

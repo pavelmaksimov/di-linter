@@ -1,2 +1,12 @@
-exclude-objects = []
-exclude-modules = []
+# Objects to exclude from dependency injection checks
+exclude-objects = [
+    "_Local*",              # All objects starting with Local (case-insensitive)
+    "*_FromOtherModule",    # All objects ending with FromOtherModule
+    "_other_module*",       # All objects starting with other_module
+    "_project.packet.other_module*"  # All objects starting with project.packet.other_module
+]
+
+# Module patterns to exclude from dependency injection checks
+exclude-modules = [
+    "_project.packet.my_module"  # Exclude the my_module module (where the issues are reported)
+]
