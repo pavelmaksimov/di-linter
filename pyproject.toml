@@ -26,7 +26,7 @@ dev = [
 DI = "di_linter.flake8_plugin:DIChecker"
 
 [project.scripts]
-di-linter = "di_linter.main:main"
+di-linter = "di_linter.cli:main"
 
 [build-system]
 requires = ["hatchling"]
