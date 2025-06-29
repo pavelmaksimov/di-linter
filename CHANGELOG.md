@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2023-07-29
+
+### Added
+- New feature: detection of patch usage in test files
+- New configuration option `tests-path` for specifying test directories
+- Command-line argument `--tests-path` for specifying test directories
+
+### Changed
+- Improved error reporting for patch usage in tests
+- Enhanced output to show both dependency injection and patch usage issues
+
 ## [1.1.0] - 2023-06-10
 
 ### Added
