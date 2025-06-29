@@ -1,9 +1,4 @@
-import os
-import subprocess
-import tempfile
 from pathlib import Path
-
-import pytest
 
 from di_linter.main import iterate_issue
 

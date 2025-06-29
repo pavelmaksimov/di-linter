@@ -1,10 +1,7 @@
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
-import pytest
-
-from di_linter.patch_linter import PatchChecker, PatchVisitor
+from di_linter.patch_linter import PatchChecker
 
 
 class TestPatchChecker(unittest.TestCase):

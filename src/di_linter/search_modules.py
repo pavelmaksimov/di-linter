@@ -1,6 +1,5 @@
 import fnmatch
 from pathlib import Path
-from typing import NewType
 
 
 def match_pattern(module_name: str, pattern: str) -> bool:
