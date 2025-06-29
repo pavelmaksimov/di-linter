@@ -1,64 +1,13 @@
 import argparse
 import ast
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set, Optional, NewType
+from typing import Dict, List, Set, Optional
 
+from di_linter.common import CodeLine, NumLine, Line, Issue, ASTParentTransformer
+from di_linter.patch_linter import patch_linter
 from di_linter.search_modules import match_pattern, get_module_path
 from di_linter.utils import validate_path, find_project_root, load_config, frame_text_with_centered_title
-
-CodeLine = NewType("CodeLine", str)
-NumLine = NewType("NumLine", int)
-Line = Dict[NumLine, CodeLine]
-
-
-@dataclass
-class Issue:
-    """Represents a dependency injection issue found in the code.
-
-    Attributes:
-        filepath: Path to the file where the issue was found
-        line_num: Line number where the issue was found
-        message: Description of the issue
-        code_line: The actual code line containing the issue
-        col: Column number where the issue starts
-    """
-
-    filepath: Path
-    line_num: int
-    message: str
-    code_line: str
-    col: int
-
-
-class ASTParentTransformer(ast.NodeTransformer):
-    """Adds parental links to AST nodes.
-
-    This transformer traverses the AST and adds a 'parent' attribute to each node,
-    pointing to its parent node. This is useful for analyzing the context of a node
-    in the AST, such as determining if a function call is part of a raise statement.
-    """
-
-    def visit(self, node):
-        """Visit a node in the AST and add parent links to its children.
-
-        Args:
-            node: The AST node to visit
-
-        Returns:
-            The original node with parent links added to its children
-        """
-        for field, value in ast.iter_fields(node):
-            if isinstance(value, list):
-                for item in value:
-                    if isinstance(item, ast.AST):
-                        item.parent = node
-                        self.visit(item)
-            elif isinstance(value, ast.AST):
-                value.parent = node
-                self.visit(value)
-        return node
 
 
 class ProjectImportsCollector(ast.NodeVisitor):
@@ -488,7 +437,7 @@ def linter(path: Path, project_root: Path, exclude_objects=None, exclude_modules
     exclude_objects = exclude_objects or ()
     exclude_modules = exclude_modules or ()
 
-    print(f"Analyzing {path.absolute()}")
+    print(f"Analyzing: {path.absolute()}")
 
     count = 0
     for issue in iterate_issue(path, project_root, exclude_objects, exclude_modules):
@@ -517,6 +466,9 @@ def main():
     parser.add_argument(
         "--exclude-modules", nargs="+", help="List of module patterns to exclude from checks"
     )
+    parser.add_argument(
+        "--tests-path", nargs="+", help="List of paths to test directories or files", default="tests"
+    )
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -531,29 +483,41 @@ def main():
 
     exclude_objects = []
     exclude_modules = []
+    tests_paths = []
 
     if "exclude-objects" in config:
         exclude_objects = config.get("exclude-objects", [])
     if "exclude-modules" in config:
         exclude_modules = config.get("exclude-modules", [])
+    if "tests-path" in config:
+        tests_paths = config.get("tests-path", [])
 
     if args.exclude_objects:
         exclude_objects = args.exclude_objects
     if args.exclude_modules:
         exclude_modules = args.exclude_modules
+    if args.tests_path:
+        tests_paths = args.tests_path
 
     text = (
-        f"Analyzing: {path.absolute()}\n"
-        f"Project name: {project_root.name}\n"
+        f"Project path: {path.absolute()}\n"
+        f"Project root: {project_root.name}\n"
         f"Exclude objects: {exclude_objects}\n"
         f"Exclude modules: {exclude_modules}\n"
+        f"Tests paths: {tests_paths}\n"
         "{info}"
     )
     print("DI Linter scanning modules:")
     count = linter(path, project_root, exclude_objects, exclude_modules)
 
-    if count:
-        print(frame_text_with_centered_title(text.format(info=f"Found {count} problems!"), "DI Linter"))
+    patch_count = patch_linter(tests_paths)
+    total_count = count + patch_count
+
+    if total_count:
+        print(frame_text_with_centered_title(
+            text.format(info=f"Found {count} dependency injection problems and {patch_count} patch usage problems!"),
+            "DI Linter"
+        ))
         sys.exit(1)
     else:
         print(

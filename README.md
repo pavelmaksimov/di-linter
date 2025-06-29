@@ -17,6 +17,8 @@ Dependency Injection is a design pattern where a class or function receives its 
 
 This linter identifies cases where project-specific dependencies are directly created or used within functions or methods, rather than being injected as parameters. It helps enforce the principle that dependencies should be passed in, not created internally.
 
+Additionally, the linter detects patch usage in test files, which is considered a bad practice as it can lead to brittle tests and make refactoring more difficult.
+
 
 ### Examples of Dependency Injection Issues
 
@@ -45,6 +47,34 @@ def backup_data():
 ```
 
 See more examples in [my_module.py](example/project/packet/my_module.py)
+
+
+### Examples of Patch Usage in Tests
+
+```python
+import unittest
+from unittest.mock import patch
+
+class TestExample(unittest.TestCase):
+    # BAD: Using patch decorator
+    @patch('module.function')  # Patch usage in tests
+    def test_function(self, mock_function):
+        mock_function.return_value = 'mocked'
+        self.assertEqual(mock_function(), 'mocked')
+
+    def test_function_with_context_manager(self):
+        # BAD: Using patch as context manager
+        with patch('module.function') as mock_function:  # Patch usage in tests
+            mock_function.return_value = 'mocked'
+            self.assertEqual(mock_function(), 'mocked')
+
+import pytest
+
+def test_with_monkeypatch(monkeypatch):
+    # BAD: Using pytest monkeypatch
+    monkeypatch.setattr('module.function', lambda: 'mocked')  # Patch usage in tests
+    assert 'mocked' == 'mocked'
+```
 
 
 ### Correct Approaches
@@ -90,6 +120,11 @@ di-linter path/to/project
 di-linter --config-path di.toml
 ```
 
+3. Run the linter with custom test paths for patch detection:
+```bash
+di-linter path/to/project --tests-path tests/unit tests/integration
+```
+
 
 ### As a flake8 plugin
 
@@ -119,6 +154,13 @@ exclude-modules = [
     "project.api.*",         # All modules in the api package
     "*.endpoints",           # All modules ending with endpoints
     "project.*.models"       # All models modules in any subpackage of project
+]
+
+# Optional: Paths to test directories or files for patch usage detection
+tests-path = [
+    "tests",                 # Default test directory
+    "tests/unit",            # Specific test subdirectory
+    "tests/integration"      # Another test subdirectory
 ]
 ```
 
@@ -160,13 +202,14 @@ Add the following to your flake8 configuration file (e.g., `.flake8`, `setup.cfg
 select = DI
 di-exclude-objects = Settings,DIContainer
 di-exclude-modules = project.endpoints,project.api.*,*.endpoints,project.*.models
+di-tests-path = tests,tests/unit,tests/integration  # Optional: paths to test directories for patch detection
 di-config = path/to/di.toml  # Optional: custom path to configuration file
 ```
 
 You can also specify these options on the command line:
 
 ```bash
-flake8 --select=DI --di-exclude-objects=Settings,DIContainer --di-exclude-modules=project.endpoints,project.api.* --di-config=path/to/di.toml path/to/your/project
+flake8 --select=DI --di-exclude-objects=Settings,DIContainer --di-exclude-modules=project.endpoints,project.api.* --di-tests-path=tests,tests/unit --di-config=path/to/di.toml path/to/your/project
 ```
 
 The `--di-config` option allows you to specify a custom path to the configuration file, 
@@ -188,6 +231,7 @@ def myfunc():
 | Code  | Description                                                |
 |-------|------------------------------------------------------------|
 | DI001 | Dependency injection: Direct usage of project dependencies |
+| DI002 | Patch usage in tests: Using mocks or patches in test files |
 
 
 ## Output Examples
@@ -196,12 +240,23 @@ def myfunc():
 ### Standalone Tool Output
 
 ```
+DI Linter scanning modules:
 Analyzing: /path/to/project
-Project name: project
-Exclude objects: []
-Exclude modules: []
+Analyzing tests in ['/path/to/tests']
 /path/to/project/module.py:10: Dependency injection: UserRepository()
 /path/to/project/module.py:15: Dependency injection: with db_transaction():
+/path/to/tests/test_module.py:8: Patch usage in tests: @patch('module.function')
+/path/to/tests/test_module.py:15: Patch usage in tests: with patch('module.function') as mock_function:
+/path/to/tests/test_module.py:22: Patch usage in tests: monkeypatch.setattr('module.function', lambda: 'mocked')
+
+┌─────────────────────────────────────────────── DI Linter ───────────────────────────────────────────────┐
+│ Project path: /path/to/project                                                                          │
+│ Project root: project                                                                                   │
+│ Exclude objects: []                                                                                     │
+│ Exclude modules: []                                                                                     │
+│ Tests paths: ['/path/to/tests']                                                                         │
+│ Found 2 dependency injection problems and 3 patch usage problems!                                       │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 
@@ -210,8 +265,7 @@ Exclude modules: []
 ```
 /path/to/project/module.py:10:5: DI001 Dependency injection: UserRepository()
 /path/to/project/module.py:15:10: DI001 Dependency injection: with db_transaction():
+/path/to/tests/test_module.py:8:5: DI002 Patch usage in tests: @patch('module.function')
+/path/to/tests/test_module.py:15:10: DI002 Patch usage in tests: with patch('module.function') as mock_function:
+/path/to/tests/test_module.py:22:5: DI002 Patch usage in tests: monkeypatch.setattr('module.function', lambda: 'mocked')
 ```
-
-
-## Visual Example
-![img.png](docs/img.png)
