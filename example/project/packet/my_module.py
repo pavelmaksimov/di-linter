@@ -126,6 +126,11 @@ def examples_not_dependency_injection_via_args(
     KlassInArgs.method2()
     KlassInArgs().method2()
 
+    def inner_func():
+        ...
+
+    inner_func()
+
 
 examples_not_dependency_injection_via_args(
     func_in_args=func_from_other_module,

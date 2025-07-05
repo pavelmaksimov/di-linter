@@ -283,6 +283,9 @@ class DependencyVisitor(ast.NodeVisitor):
         self.filepath = filepath
         self.skip_comment = skip_comment
         self.issues: List[Issue] = []
+        self.context_vars: Set[str] = set()
+        self.current_scope_functions: Set[str] = set()
+        self.scope_stack: List[Set[str]] = []
 
     def visit_Call(self, node):
         """Visit a function call node in the AST.
@@ -298,9 +301,90 @@ class DependencyVisitor(ast.NodeVisitor):
 
         if self._is_project_dependency(node.func):
             root_name = self._get_root_name(node.func)
-            if root_name not in self.params and not self._is_line_skipped(node.lineno):
+            if (root_name not in self.params and 
+                root_name not in self.context_vars and 
+                root_name not in self.current_scope_functions and 
+                not self._is_line_skipped(node.lineno)):
                 self._add_issue(line=node.lineno, col=node.col_offset, message=root_name)
 
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node):
+        """Visit a function definition node in the AST.
+
+        Manages function scope for tracking local function definitions.
+
+        Args:
+            node: The AST node representing a function definition
+        """
+        # Push current scope to stack and create new scope
+        self.scope_stack.append(self.current_scope_functions.copy())
+        new_scope = set()
+
+        # Collect all function definitions in this function's body
+        for child in ast.walk(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child != node:
+                new_scope.add(child.name)
+
+        self.current_scope_functions = new_scope
+
+        # Visit children
+        self.generic_visit(node)
+
+        # Restore previous scope
+        self.current_scope_functions = self.scope_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node):
+        """Visit an async function definition node in the AST.
+
+        Manages async function scope for tracking local function definitions.
+
+        Args:
+            node: The AST node representing an async function definition
+        """
+        # Push current scope to stack and create new scope
+        self.scope_stack.append(self.current_scope_functions.copy())
+        new_scope = set()
+
+        # Collect all function definitions in this function's body
+        for child in ast.walk(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child != node:
+                new_scope.add(child.name)
+
+        self.current_scope_functions = new_scope
+
+        # Visit children
+        self.generic_visit(node)
+
+        # Restore previous scope
+        self.current_scope_functions = self.scope_stack.pop()
+
+    def visit_With(self, node):
+        """Visit a with statement node in the AST.
+
+        Collects context variables from 'as' clauses to exclude them from dependency checks.
+
+        Args:
+            node: The AST node representing a with statement
+        """
+        for item in node.items:
+            if item.optional_vars:
+                if isinstance(item.optional_vars, ast.Name):
+                    self.context_vars.add(item.optional_vars.id)
+        self.generic_visit(node)
+
+    def visit_AsyncWith(self, node):
+        """Visit an async with statement node in the AST.
+
+        Collects context variables from 'as' clauses to exclude them from dependency checks.
+
+        Args:
+            node: The AST node representing an async with statement
+        """
+        for item in node.items:
+            if item.optional_vars:
+                if isinstance(item.optional_vars, ast.Name):
+                    self.context_vars.add(item.optional_vars.id)
         self.generic_visit(node)
 
     def visit_Attribute(self, node):
@@ -313,7 +397,10 @@ class DependencyVisitor(ast.NodeVisitor):
         """
         if not isinstance(node.parent, ast.Call) and self._is_project_dependency(node):
             root_name = self._get_root_name(node)
-            if root_name not in self.params and not self._is_line_skipped(node.lineno):
+            if (root_name not in self.params and 
+                root_name not in self.context_vars and 
+                root_name not in self.current_scope_functions and 
+                not self._is_line_skipped(node.lineno)):
                 self._add_issue(line=node.lineno, col=node.col_offset, message=root_name)
         self.generic_visit(node)
 
