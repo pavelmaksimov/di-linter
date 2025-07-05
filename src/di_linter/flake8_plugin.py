@@ -18,7 +18,7 @@ class DIChecker:
     """
 
     name = "di-linter"
-    version = "0.1.0"
+    version = "1.3.0"
 
     def __init__(self, tree, filename, options=None):
         """Initialize the DIChecker.

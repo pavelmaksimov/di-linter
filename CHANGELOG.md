@@ -2,8 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-07-05
+
 ### Added
-## [1.2.0] - 2023-07-29
+- New feature: scope tracking and context variable detection
+- Enhanced test coverage for prohibited objects detection
+- Improved detection accuracy for dependency injection patterns
+
+### Fixed
+- Fixed test suite reliability and stability
+- Minor bug fixes and improvements
+
+## [1.2.0] - 2025-06-29
 
 ### Added
 - New feature: detection of patch usage in test files
@@ -17,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - Improved error reporting for patch usage in tests
 - Enhanced output to show both dependency injection and patch usage issues
 
-## [1.1.0] - 2023-06-10
+## [1.1.0] - 2025-06-10
 
 ### Added
 - Support for Python 3.11

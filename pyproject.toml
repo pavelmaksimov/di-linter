@@ -1,6 +1,6 @@
 [project]
 name = "di-linter"
-version = "1.2.0"
+version = "1.3.0"
 description = "Static code analysis for search of dependencies injection"
 readme = "README.md"
 authors = [
