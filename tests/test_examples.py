@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 
-EXAMPLE_DIR = Path.cwd().parent / "example"
+EXAMPLE_DIR = Path.cwd() / "example"
 PROJECT_DIR = EXAMPLE_DIR / "project"
 PACKET_DIR = PROJECT_DIR / "packet"
 MY_MODULE_PATH = PACKET_DIR / "my_module.py"

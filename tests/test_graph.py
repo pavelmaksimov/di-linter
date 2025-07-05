@@ -2,7 +2,7 @@ from pathlib import Path
 
 from di_linter.graph import build_dependency_graph
 
-EXAMPLE_DIR = Path.cwd().parent / "example"
+EXAMPLE_DIR = Path.cwd() / "example"
 PROJECT_DIR = EXAMPLE_DIR / "project"
 
 
@@ -67,6 +67,7 @@ def test_all_cases():
             "project.packet.other_module.packet.other_module.OtherModuleException",
         },
         "project.packet.my_module.examples_not_dependency_injection_via_args": {
+            "project.packet.my_module.inner_func",
             "project.packet.my_module.method2"
         },
         "project.packet.my_module.lattr1": {
@@ -92,6 +93,7 @@ def test_all_cases():
         "project.packet.my_module.local_context_manager": set(),
         "project.packet.my_module.local_func": set(),
         "project.packet.my_module.method2": set(),
+        "project.packet.my_module.inner_func": set(),
         "project.packet.other_module.KlassFromOtherModule": set(),
         "project.packet.other_module.OtherModuleException": set(),
         "project.packet.other_module.func_from_other_module": set(),

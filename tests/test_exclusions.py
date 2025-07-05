@@ -45,7 +45,7 @@ def test_exclude_object_by_fullname():
 def test_exclude_object_by_pattern():
     """Test that objects can be excluded by pattern using fnmatch."""
     # Test with pattern match exclusion
-    exclude_objects = ["Local*"]
+    exclude_objects = ["Local*", "local*"]
     exclude_modules = []
 
     issues = list(iterate_issue(MY_MODULE_PATH, PROJECT_DIR, exclude_objects, exclude_modules))
@@ -81,7 +81,7 @@ def test_exclude_object_by_pattern():
 def test_exclude_multiple_patterns():
     """Test that multiple patterns can be used for exclusion."""
     # Test with multiple pattern match exclusions
-    exclude_objects = ["Local*", "*FromOtherModule"]
+    exclude_objects = ["Local*", "local*", "*FromOtherModule"]
     exclude_modules = []
 
     issues = list(iterate_issue(MY_MODULE_PATH, PROJECT_DIR, exclude_objects, exclude_modules))

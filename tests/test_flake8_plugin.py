@@ -1,7 +1,7 @@
 import ast
 from typing import List, Tuple
 
-from src.di_linter.flake8_plugin import DIChecker
+from di_linter.flake8_plugin import DIChecker
 
 
 def run_checker_on_code(code: str, filename: str = "test.py") -> List[Tuple[int, int, str, type]]:
